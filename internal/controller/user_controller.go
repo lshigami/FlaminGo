@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"queue_system/internal/service"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 	"queue_system/internal/dto/request"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 )
 
 type UserController struct {
@@ -28,7 +30,17 @@ func (uc *UserController) CreateUser(c *gin.Context) {
 	}
 	userResponse, err := uc.UserService.CreateUser(&req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Error().Err(err).Interface("request", req).Msg("CreateUser: Service error") // Log lỗi từ service
+		if errors.Is(err, service.ErrEmailExists) {                                     // KIỂM TRA LỖI CỤ THỂ
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()}) // TRẢ VỀ 409
+			return
+		}
+		if errors.Is(err, service.ErrCreateUserFailed) { // Xử lý lỗi chung hơn nếu có
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		// Lỗi không xác định khác
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred while creating the user."})
 		return
 	}
 

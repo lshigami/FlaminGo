@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -22,15 +24,6 @@ type Database struct {
 }
 
 func NewConfig() (*Config, error) {
-	viper.SetConfigName(".env")
-	viper.SetConfigType("env")
-	viper.AddConfigPath(".")
-
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err != nil {
-		log.Warn().Err(err).Msg("No config file found, using environment variables")
-	}
 
 	var config Config
 
@@ -42,4 +35,21 @@ func NewConfig() (*Config, error) {
 	config.Database.Name = viper.GetString("DATABASE_NAME")
 
 	return &config, nil
+}
+
+func InitViper() error {
+	viper.SetConfigName(".env")
+	viper.SetConfigType("env")
+	viper.AddConfigPath(".")
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			log.Warn().Msg("No .env config file found, relying on environment variables.")
+			return nil
+		}
+		return fmt.Errorf("error reading config file: %w", err)
+	}
+	log.Info().Str("configFile", viper.ConfigFileUsed()).Msg("Successfully loaded configuration.")
+	return nil
 }

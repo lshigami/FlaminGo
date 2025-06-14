@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
 	"queue_system/config"
 	"queue_system/database"
 	"queue_system/internal/controller"
@@ -15,6 +17,11 @@ import (
 )
 
 func main() {
+
+	if err := config.InitViper(); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize Viper configuration: %v\n", err)
+		os.Exit(1)
+	}
 
 	app := fx.New(
 		fx.Provide(

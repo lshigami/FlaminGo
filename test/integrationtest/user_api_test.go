@@ -7,6 +7,7 @@ import (
 	"queue_system/internal/dto/request"
 	"queue_system/internal/model"
 	"queue_system/internal/service" // Để truy cập các hằng số lỗi
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,12 +15,11 @@ import (
 )
 
 func TestUserAPI_CreateAndGetUser(t *testing.T) {
-	CheckTestEnv(t)                                                   // Skip test if env var not set
-	require.NotNil(t, globalTestApp, "globalTestApp not initialized") // Kiểm tra globalTestApp
+	CheckTestEnv(t)
+	require.NotNil(t, globalTestApp, "globalTestApp not initialized")
 	require.NotNil(t, globalTestApp.DB, "globalTestApp.DB not initialized")
 	require.NotNil(t, globalTestApp.Router, "globalTestApp.Router not initialized")
 
-	// Dọn dẹp bảng User trước khi test
 	ClearTables(t, globalTestApp.DB, &model.User{}, &model.Appointment{})
 
 	// 1. Create User
@@ -29,10 +29,6 @@ func TestUserAPI_CreateAndGetUser(t *testing.T) {
 		Role:  "tester",
 	}
 	rr := MakeRequest(t, globalTestApp.Router, http.MethodPost, "/api/v1/users", createUserReq)
-	// **Quan trọng: Sửa lỗi Controller của bạn để trả về đúng status code**
-	// Ví dụ, nếu email đã tồn tại, trả về 409, không phải 500.
-	// Nếu user không tìm thấy, trả về 404.
-	// Các assert dưới đây giả định bạn đã sửa controller.
 	require.Equal(t, http.StatusCreated, rr.Code, "Create User failed. Response: %s", rr.Body.String())
 
 	var createdUser model.User
@@ -67,7 +63,6 @@ func TestUserAPI_CreateAndGetUser(t *testing.T) {
 	var errorResponseNotFound map[string]string
 	err = json.Unmarshal(rrNotFound.Body.Bytes(), &errorResponseNotFound)
 	require.NoError(t, err)
-	assert.Contains(t, errorResponseNotFound["error"], service.ErrUserNotFound.Error())
-}
+	assert.Contains(t, strings.ToLower(errorResponseNotFound["error"]), strings.ToLower(service.ErrUserNotFound.Error()))
 
-// Thêm các test khác cho User API...
+}
